@@ -7,7 +7,7 @@
   --s2s-label-bg: rgba(0,0,0,0.6);
 }
 
-/* ── Page header ─────────────────────────────────── */
+/* Page header */
 .s2s-hero {
   background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 50%, #4a9fd4 100%);
   padding: 48px 24px 36px;
@@ -28,7 +28,7 @@
   line-height: 1.6;
 }
 
-/* ── Progress bar ────────────────────────────────── */
+/* Progress bar */
 .s2s-progress-bar-wrap {
   background: #c8d6e5;
   height: 6px;
@@ -41,7 +41,7 @@
   transition: width 0.4s ease;
 }
 
-/* ── Layout ──────────────────────────────────────── */
+/* Layout */
 .s2s-section {
   background-color: var(--s2s-bg);
   min-height: 100vh;
@@ -52,7 +52,7 @@
   margin: 0 auto;
 }
 
-/* ── Trial card ──────────────────────────────────── */
+/* Trial card */
 .s2s-trial-card {
   background: var(--s2s-card-bg);
   border-radius: 16px;
@@ -77,7 +77,7 @@
   border-radius: 20px;
 }
 
-/* ── Image ───────────────────────────────────────── */
+/* Image */
 .s2s-image-wrap {
   text-align: center;
   margin-bottom: 28px;
@@ -96,7 +96,7 @@
   margin-top: 6px;
 }
 
-/* ── Prompt text ─────────────────────────────────── */
+/* Prompt text */
 .s2s-prompt {
   text-align: center;
   font-size: 15px;
@@ -109,7 +109,7 @@
   font-weight: 600;
 }
 
-/* ── Audio options ───────────────────────────────── */
+/* Audio options */
 .s2s-audio-grid {
   display: flex;
   flex-direction: column;
@@ -177,7 +177,7 @@
   opacity: 1;
 }
 
-/* ── Submit button ───────────────────────────────── */
+/* Submit button */
 .s2s-submit-wrap {
   text-align: center;
   margin-top: 40px;
@@ -208,7 +208,7 @@
   transform: none;
 }
 
-/* ── Instructions banner ─────────────────────────── */
+/* Instructions banner */
 .s2s-instructions {
   background: linear-gradient(90deg, #dbeafe, #e0f2fe);
   border-left: 4px solid var(--s2s-accent);
