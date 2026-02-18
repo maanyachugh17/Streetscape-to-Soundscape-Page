@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Study — Streetscape-to-Soundscape</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="./static/css/user_study/s2s.css">
+  <link rel="icon" href="./static/images/GISenseLabLogoPNG.png">
+  <script src="config/s2s_study_src.js"></script>
+</head>
+<body>
+
+<div class="s2s-hero">
+  <div class="s2s-hero-title">Streetscape-to-Soundscape &nbsp;·&nbsp; User Study</div>
+  <div class="s2s-hero-subtitle">
+    Help us evaluate our Sound2IMG model by listening to audio clips and
+    deciding which one best matches the street scene shown.
+  </div>
+</div>
+
+<div class="s2s-progress-bar-wrap">
+  <div class="s2s-progress-bar-fill" id="progressFill"></div>
+</div>
+
+<section class="s2s-section">
+  <div class="s2s-container">
+
+    <div class="s2s-instructions">
+      <strong>📋 Instructions</strong>
+      For each of the 10 trials below, look carefully at the street photograph, then listen to
+      all three audio clips (A, B, C). Select the <em>one</em> audio clip you feel best represents the
+      soundscape of that street scene. You must answer every trial before submitting.
+    </div>
+
+    <div id="s2s-trials-container"></div>
+
+    <div class="s2s-submit-wrap">
+      <button class="s2s-submit-btn" id="s2sSubmitBtn">Submit Answers</button>
+    </div>
+
+  </div>
+</section>
+
+<script>
+(function () {
+  const TOTAL = 10;
+  const selections = {};
+  for (let i = 1; i <= TOTAL; i++) selections[i] = null;
+
+  const container = document.getElementById("s2s-trials-container");
+  const progressFill = document.getElementById("progressFill");
+
+  for (let i = 1; i <= TOTAL; i++) {
+    const cfg = S2S_CONFIG["sub_" + i];
+    const card = document.createElement("div");
+    card.className = "s2s-trial-card";
+    card.id = "s2s-trial-" + i;
+    card.innerHTML = `
+      <div class="s2s-trial-number">Trial ${i} / ${TOTAL}</div>
+      <div class="s2s-image-wrap">
+        <img class="s2s-streetscape" src="${cfg.image}" alt="Street scene for trial ${i}">
+        <div class="s2s-image-caption">Street scene ${i}</div>
+      </div>
+      <div class="s2s-prompt">
+        Listen to each audio clip below, then select the <em>best matching soundscape</em> for this street scene.
+      </div>
+      <div class="s2s-audio-grid" id="s2s-options-${i}">
+        ${["A","B","C"].map(opt => `
+          <div class="s2s-audio-option" id="s2s-opt-${i}-${opt}"
+               data-trial="${i}" data-option="${opt}"
+               role="button" tabindex="0" aria-label="Audio option ${opt}">
+            <div class="s2s-option-label">${opt}</div>
+            <audio controls preload="none">
+              <source src="${cfg.audios[opt]}" type="audio/mpeg">
+              Your browser does not support the audio element.
+            </audio>
+            <span class="s2s-check-icon">✓</span>
+          </div>
+        `).join("")}
+      </div>
+    `;
+    container.appendChild(card);
+  }
+
+  container.addEventListener("click", function (e) {
+    const optEl = e.target.closest(".s2s-audio-option");
+    if (!optEl || e.target.closest("audio")) return;
+    const trial  = parseInt(optEl.dataset.trial, 10);
+    const option = optEl.dataset.option;
+    document.querySelectorAll(`#s2s-options-${trial} .s2s-audio-option`).forEach(el => el.classList.remove("selected"));
+    if (selections[trial] === option) {
+      selections[trial] = null;
+    } else {
+      optEl.classList.add("selected");
+      selections[trial] = option;
+    }
+    updateProgress();
+  });
+
+  container.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") {
+      const optEl = e.target.closest(".s2s-audio-option");
+      if (optEl) { e.preventDefault(); optEl.click(); }
+    }
+  });
+
+  function updateProgress() {
+    const answered = Object.values(selections).filter(v => v !== null).length;
+    progressFill.style.width = ((answered / TOTAL) * 100) + "%";
+  }
+
+  document.getElementById("s2sSubmitBtn").addEventListener("click", function () {
+    for (let i = 1; i <= TOTAL; i++) {
+      if (!selections[i]) {
+        alert(`Please select an audio option for Trial ${i} before submitting.`);
+        document.getElementById("s2s-trial-" + i).scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+    }
+
+    const submissionData = [];
+    for (let i = 1; i <= TOTAL; i++) {
+      submissionData.push({ q: "S2S", trialNumber: i, option: selections[i] });
+    }
+    console.log("S2S Submission:", submissionData);
+
+    // Score calculation
+    const answers = {};
+    for (let i = 1; i <= TOTAL; i++) answers[i] = S2S_CONFIG["sub_" + i].answer;
+    let correct = 0;
+    for (let i = 1; i <= TOTAL; i++) { if (selections[i] === answers[i]) correct++; }
+
+    const pct   = Math.round((correct / TOTAL) * 100);
+    const emoji = correct <= 3 ? "🎧" : correct <= 6 ? "👍" : correct <= 8 ? "🌟" : "🏆";
+    const msg   = correct <= 3 ? "Keep listening! Every soundscape is unique."
+                : correct <= 6 ? "Good ear! You matched several scenes correctly."
+                : correct <= 8 ? "Great job! You have a strong sense of soundscape."
+                : "Perfect! You're a soundscape expert!";
+
+    const scoreCard = document.createElement("div");
+    scoreCard.style.cssText = "background:linear-gradient(135deg,#1a3a5c,#2d6a9f);color:#fff;border-radius:20px;padding:40px 32px;text-align:center;margin-top:40px;box-shadow:0 8px 32px rgba(0,0,0,.2)";
+    scoreCard.innerHTML = `
+      <div style="font-size:56px;margin-bottom:12px">${emoji}</div>
+      <div style="font-size:2rem;font-weight:800;margin-bottom:8px">${correct} / ${TOTAL} Correct</div>
+      <div style="font-size:1.1rem;opacity:.85;margin-bottom:24px">${msg}</div>
+      <div style="background:rgba(255,255,255,.2);border-radius:99px;height:14px;max-width:400px;margin:0 auto 24px">
+        <div id="s2s-score-bar" style="background:#fff;border-radius:99px;height:100%;width:0%;transition:width 1s ease"></div>
+      </div>
+      <div style="font-size:.95rem;opacity:.75;margin-bottom:28px">${pct}% accuracy</div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:20px">
+        ${Array.from({length: TOTAL}, (_, idx) => {
+          const n = idx + 1;
+          const hit = selections[n] === answers[n];
+          return '<div title="Trial ' + n + ': you chose ' + selections[n] + ', correct was ' + answers[n] + '" style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;cursor:default;background:' + (hit ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.2)') + ';color:' + (hit ? '#1a3a5c' : '#fff') + '">' + (hit ? '✓' : n) + '</div>';
+        }).join("")}
+      </div>
+      <div style="font-size:12px;opacity:.6;margin-bottom:28px">Hover a circle to see trial details</div>
+      <button id="s2s-redo-btn" style="background:rgba(255,255,255,.15);color:#fff;border:2px solid rgba(255,255,255,.6);padding:12px 36px;font-size:16px;font-weight:700;border-radius:40px;cursor:pointer;transition:all .2s;letter-spacing:.5px">
+        🔄 Try Again
+      </button>
+    `;
+
+    document.querySelector(".s2s-submit-wrap").after(scoreCard);
+    setTimeout(() => { document.getElementById("s2s-score-bar").style.width = pct + "%"; }, 100);
+    scoreCard.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    document.getElementById("s2sSubmitBtn").disabled = true;
+    document.getElementById("s2sSubmitBtn").textContent = "Submitted ✓";
+
+    // Redo button
+    document.getElementById("s2s-redo-btn").addEventListener("mouseenter", function() {
+      this.style.background = "rgba(255,255,255,.3)";
+      this.style.transform = "translateY(-2px)";
+    });
+    document.getElementById("s2s-redo-btn").addEventListener("mouseleave", function() {
+      this.style.background = "rgba(255,255,255,.15)";
+      this.style.transform = "translateY(0)";
+    });
+    document.getElementById("s2s-redo-btn").addEventListener("click", function() {
+      // Reset all selections
+      for (let i = 1; i <= TOTAL; i++) selections[i] = null;
+
+      // Remove all selected states from options
+      document.querySelectorAll(".s2s-audio-option.selected").forEach(el => el.classList.remove("selected"));
+
+      // Reset progress bar
+      progressFill.style.width = "0%";
+
+      // Re-enable submit button
+      const btn = document.getElementById("s2sSubmitBtn");
+      btn.disabled = false;
+      btn.textContent = "Submit Answers";
+
+      // Remove score card
+      scoreCard.remove();
+
+      // Scroll back to top
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    fetch("https://dit-proxy-wang-junbos-projects.vercel.app/api/s2s", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(submissionData)
+    }).catch(() => console.table(submissionData));
+  });
+
+})();
+</script>
+
+</body>
+</html>
